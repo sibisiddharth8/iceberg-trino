@@ -3,6 +3,8 @@ import cors from "cors";
 import "dotenv/config";
 
 import analyticsRoutes from "./routes/analytics.routes.js";
+import transactionRoutes from "./routes/transaction.routes.js";
+
 import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -19,6 +21,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/transactions", transactionRoutes);
 
 // Must come after all routes
 app.use(notFoundHandler);
