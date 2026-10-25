@@ -3,6 +3,7 @@ import cors from "cors";
 import "dotenv/config";
 
 import analyticsRoutes from "./routes/analytics.routes.js";
+import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -19,6 +20,10 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/analytics", analyticsRoutes);
 
+// Must come after all routes
+app.use(notFoundHandler);
+
+// Must come last
 app.use(errorHandler);
 
 const PORT = Number(process.env.PORT ?? 3001);

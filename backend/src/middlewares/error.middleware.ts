@@ -1,15 +1,31 @@
 import type { ErrorRequestHandler } from "express";
+import { AppError } from "../errors/AppError.js";
 
 export const errorHandler: ErrorRequestHandler = (
-  error,
+  error: unknown,
   _req,
   res,
-  _next
+  next
 ) => {
-  console.error("API Error:", error);
+  if (res.headersSent) {
+    return next(error);
+  }
 
-  res.status(500).json({
+  const isAppError = error instanceof AppError;
+
+  const statusCode = isAppError ? error.statusCode : 500;
+
+  if (!isAppError) {
+    console.error("Unexpected error:", error);
+  }
+
+  res.status(statusCode).json({
     success: false,
-    message: "Internal server error",
+    error: {
+      code: isAppError ? error.code : "INTERNAL_SERVER_ERROR",
+      message: isAppError
+        ? error.message
+        : "An unexpected error occurred",
+    },
   });
 };

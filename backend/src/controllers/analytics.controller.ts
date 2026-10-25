@@ -1,19 +1,14 @@
-import type { Request, Response, NextFunction } from "express";
+import type { RequestHandler } from "express";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { getAnalyticsOverview } from "../services/analytics.service.js";
 
-export async function analyticsOverviewController(
-  _req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
+export const analyticsOverviewController: RequestHandler = asyncHandler(
+  async (_req, res) => {
     const data = await getAnalyticsOverview();
 
     res.status(200).json({
       success: true,
       data,
     });
-  } catch (error) {
-    next(error);
   }
-}
+);
