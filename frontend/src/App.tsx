@@ -1,18 +1,27 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { LakehouseProvider } from './context/LakehouseContext';
+import { AppLayout } from './components/layout/AppLayout';
+import { OverviewPage } from './pages/OverviewPage';
+import { IngestionPage } from './pages/IngestionPage';
+import { QueryStudioPage } from './pages/QueryStudioPage';
+import { CatalogPage } from './pages/CatalogPage';
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export function App() {
   return (
-    <>
-      <h1 className="text-3xl font-bold underline">
-        Hello world!
-      </h1>
-    </>
-  )
+    <LakehouseProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AppLayout />}>
+            <Route index element={<OverviewPage />} />
+            <Route path="ingest" element={<IngestionPage />} />
+            <Route path="query" element={<QueryStudioPage />} />
+            <Route path="catalog" element={<CatalogPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </LakehouseProvider>
+  );
 }
 
-export default App
+export default App;

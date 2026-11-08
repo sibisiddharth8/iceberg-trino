@@ -12,7 +12,6 @@ export const errorHandler: ErrorRequestHandler = (
   }
 
   const isAppError = error instanceof AppError;
-
   const statusCode = isAppError ? error.statusCode : 500;
 
   if (!isAppError) {
@@ -23,9 +22,8 @@ export const errorHandler: ErrorRequestHandler = (
     success: false,
     error: {
       code: isAppError ? error.code : "INTERNAL_SERVER_ERROR",
-      message: isAppError
-        ? error.message
-        : "An unexpected error occurred",
+      message: isAppError ? error.message : "An unexpected error occurred",
+      details: isAppError ? error.details : undefined,
     },
   });
 };
