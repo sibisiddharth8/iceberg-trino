@@ -7,6 +7,7 @@ interface LakehouseContextType {
   tables: TableSummary[];
   samples: SampleItem[];
   isRefreshing: boolean;
+  isInitialLoading: boolean;
   refreshTables: () => Promise<void>;
   // History modal
   historyTableName: string | null;
@@ -25,6 +26,7 @@ export function LakehouseProvider({ children }: { children: ReactNode }) {
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [samples, setSamples] = useState<SampleItem[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const [historyTableName, setHistoryTableName] = useState<string | null>(null);
   const [tableHistory, setTableHistory] = useState<SnapshotHistoryItem[]>([]);
@@ -52,8 +54,12 @@ export function LakehouseProvider({ children }: { children: ReactNode }) {
 
   const refreshTables = async () => {
     setIsRefreshing(true);
-    await Promise.all([fetchTables(), fetchSamples()]);
-    setIsRefreshing(false);
+    try {
+      await Promise.all([fetchTables(), fetchSamples()]);
+    } finally {
+      setIsRefreshing(false);
+      setIsInitialLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -85,6 +91,7 @@ export function LakehouseProvider({ children }: { children: ReactNode }) {
         tables,
         samples,
         isRefreshing,
+        isInitialLoading,
         refreshTables,
         historyTableName,
         tableHistory,

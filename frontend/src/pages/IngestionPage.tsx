@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useLakehouse } from '../context/LakehouseContext';
 import { tableService, AppApiError } from '../services';
+import { Loader, PageLoader, Card } from '../components/common';
 import type {
   SampleItem,
   IngestResponseData,
@@ -20,7 +21,7 @@ import type {
 } from '../types';
 
 export function IngestionPage() {
-  const { tables, samples, refreshTables, openHistoryModal } = useLakehouse();
+  const { tables, samples, refreshTables, openHistoryModal, isInitialLoading } = useLakehouse();
 
   const [sourceType, setSourceType] = useState<'link' | 'file'>('link');
   const [s3Path, setS3Path] = useState('s3://finance-lake/uploads/transactions_v1.parquet');
@@ -84,6 +85,15 @@ export function IngestionPage() {
     }
   };
 
+  if (isInitialLoading) {
+    return (
+      <PageLoader
+        text="Loading Ingestion & Versioning Engine"
+        subtext="Fetching available Parquet test scenarios and active catalog tables..."
+      />
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Page Header */}
@@ -97,7 +107,7 @@ export function IngestionPage() {
       </div>
 
       {/* 1. Quick Presets Bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
+      <Card className="p-5 space-y-3">
         <div className="flex items-center space-x-2">
           <Sparkles className="w-4 h-4 text-sc-green" />
           <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
@@ -115,9 +125,9 @@ export function IngestionPage() {
               className="text-left p-4 rounded-xl bg-slate-50 border border-slate-200 hover:border-sc-blue hover:bg-sc-blue-light/30 transition-all group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 gap-2">
                   <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                       sample.tag.includes('Error')
                         ? 'bg-rose-100 text-rose-700 border border-rose-200'
                         : sample.tag.includes('V1')
@@ -129,7 +139,7 @@ export function IngestionPage() {
                   >
                     {sample.tag}
                   </span>
-                  <span className="text-[11px] text-slate-500 font-mono font-medium">
+                  <span className="text-[11px] text-slate-500 font-mono font-medium shrink-0">
                     {sample.records} rows
                   </span>
                 </div>
@@ -147,12 +157,12 @@ export function IngestionPage() {
             </button>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* 2. Ingestion Form & Results */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left: Form */}
-        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+        <Card className="lg:col-span-7 p-6 shadow-xs">
           <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
             <div className="flex items-center space-x-3">
               <div className="p-2 rounded-xl bg-sc-green-light text-sc-green">
@@ -272,10 +282,12 @@ export function IngestionPage() {
                 className="w-full py-3 px-4 rounded-xl font-semibold text-xs text-white bg-sc-green hover:bg-sc-green-hover active:scale-[0.99] transition-all flex items-center justify-center space-x-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Validating Schema & Pushing to Iceberg...</span>
-                  </>
+                  <Loader
+                    size="sm"
+                    color="white"
+                    variant="inline"
+                    text="Validating Schema & Pushing to Iceberg..."
+                  />
                 ) : (
                   <>
                     <UploadCloud className="w-4 h-4" />
@@ -361,7 +373,7 @@ export function IngestionPage() {
               )}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Right: Active Iceberg Tables List */}
         <div className="lg:col-span-5 space-y-4">
@@ -373,29 +385,29 @@ export function IngestionPage() {
           </div>
 
           {tables.length === 0 ? (
-            <div className="p-8 text-center bg-white border border-dashed border-slate-200 rounded-2xl">
+            <Card className="p-8 text-center border-dashed">
               <p className="text-xs text-slate-500">
                 No Iceberg tables created yet.
               </p>
               <p className="text-[11px] text-slate-400 mt-1">
                 Use the form or click Scenario 1 to initialize your first table!
               </p>
-            </div>
+            </Card>
           ) : (
             <div className="space-y-3">
               {tables.map((tbl) => (
-                <div
+                <Card
                   key={tbl.identifier}
-                  className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition-all space-y-3"
+                  className="p-4.5 space-y-3 hover:border-slate-300"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2 h-2 rounded-full bg-sc-green" />
-                      <span className="text-xs font-mono font-bold text-slate-900">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      <span className="w-2 h-2 rounded-full bg-sc-green shrink-0" />
+                      <span className="text-xs font-mono font-bold text-slate-900 truncate" title={tbl.identifier}>
                         {tbl.identifier}
                       </span>
                     </div>
-                    <span className="text-[11px] font-mono font-bold text-sc-green bg-sc-green-light px-2.5 py-0.5 rounded-full border border-sc-green/20">
+                    <span className="text-[11px] font-mono font-bold text-sc-green bg-sc-green-light px-2.5 py-0.5 rounded-full border border-sc-green/20 shrink-0">
                       {tbl.totalRows.toLocaleString()} rows
                     </span>
                   </div>
@@ -408,13 +420,13 @@ export function IngestionPage() {
 
                     <button
                       onClick={() => openHistoryModal(tbl.tableName)}
-                      className="inline-flex items-center space-x-1 text-sc-blue hover:text-sc-blue-hover font-semibold px-2 py-0.5 rounded bg-sc-blue-light/50 hover:bg-sc-blue-light border border-sc-blue/20 shrink-0 text-[11px]"
+                      className="inline-flex items-center space-x-1 text-sc-blue hover:text-sc-blue-hover font-semibold px-2 py-0.5 rounded bg-sc-blue-light/50 hover:bg-sc-blue-light border border-sc-blue/20 shrink-0 text-[11px] cursor-pointer"
                     >
                       <History className="w-3 h-3" />
                       <span>Lineage ({tbl.snapshotCount})</span>
                     </button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}

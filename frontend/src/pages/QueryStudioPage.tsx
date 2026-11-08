@@ -16,10 +16,11 @@ import {
 } from 'lucide-react';
 import { useLakehouse } from '../context/LakehouseContext';
 import { queryService, AppApiError } from '../services';
+import { Loader, DataTable, Card } from '../components/common';
 import type { QueryResultData } from '../types';
 
 export function QueryStudioPage() {
-  const { tables, injectedQuery, setInjectedQuery, openHistoryModal } = useLakehouse();
+  const { tables, injectedQuery, setInjectedQuery, openHistoryModal, isInitialLoading } = useLakehouse();
   const [searchParams] = useSearchParams();
 
   const defaultSql = `SELECT 
@@ -218,7 +219,7 @@ LIMIT 25`,
       </div>
 
       {/* Presets Bar */}
-      <div className="flex flex-wrap items-center gap-2 bg-white border border-slate-200 p-3 rounded-xl shadow-xs">
+      <Card className="flex flex-wrap items-center gap-2 p-3 shadow-xs">
         <div className="flex items-center space-x-1.5 px-2 text-xs font-bold text-slate-700">
           <Sparkles className="w-4 h-4 text-sc-green" />
           <span>Quick Query Presets:</span>
@@ -233,19 +234,29 @@ LIMIT 25`,
             {preset.name}
           </button>
         ))}
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Schema Explorer */}
-        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl p-4 flex flex-col h-[650px] shadow-xs">
+        <Card className="lg:col-span-4 xl:col-span-3 p-4 flex flex-col h-[650px] shadow-xs">
           <div className="flex items-center space-x-2 pb-3 mb-3 border-b border-slate-100">
-            <Database className="w-4 h-4 text-sc-blue" />
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+            <Database className="w-4 h-4 text-sc-blue shrink-0" />
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider truncate">
               Catalog Schema Explorer
             </h3>
           </div>
 
-          {tables.length === 0 ? (
+          {isInitialLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-12">
+              <Loader
+                variant="card"
+                size="md"
+                color="sc"
+                text="Scanning Catalog..."
+                subtext="Fetching tables & columns..."
+              />
+            </div>
+          ) : tables.length === 0 ? (
             <div className="text-center py-12 text-slate-400 text-xs flex-1 flex flex-col items-center justify-center">
               <Search className="w-6 h-6 mb-2 text-slate-300" />
               <span>No tables in catalog.</span>
@@ -265,19 +276,19 @@ LIMIT 25`,
                           isSelected ? null : tbl.identifier
                         )
                       }
-                      className="w-full px-3 py-2.5 text-left flex items-center justify-between hover:bg-slate-50 transition-colors"
+                      className="w-full px-3 py-2.5 text-left flex items-center justify-between hover:bg-slate-50 transition-colors gap-2"
                     >
-                      <div className="flex items-center space-x-2 truncate">
+                      <div className="flex items-center space-x-2 min-w-0 flex-1">
                         <ChevronRight
-                          className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                          className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${
                             isSelected ? 'rotate-90 text-sc-green' : ''
                           }`}
                         />
-                        <span className="text-xs font-mono font-bold text-slate-800 truncate">
+                        <span className="text-xs font-mono font-bold text-slate-800 truncate" title={tbl.tableName}>
                           {tbl.tableName}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-sc-green font-semibold bg-sc-green-light px-2 py-0.5 rounded-full border border-sc-green/20">
+                      <span className="text-[10px] font-mono text-sc-green font-semibold bg-sc-green-light px-2 py-0.5 rounded-full border border-sc-green/20 shrink-0">
                         {tbl.totalRows.toLocaleString()}
                       </span>
                     </button>
@@ -295,7 +306,7 @@ LIMIT 25`,
                           </button>
                           <button
                             onClick={() => insertText(`iceberg.${tbl.identifier}`)}
-                            className="text-slate-500 hover:text-slate-800 font-semibold truncate"
+                            className="text-slate-500 hover:text-slate-800 font-semibold truncate shrink-0"
                           >
                             + Insert
                           </button>
@@ -304,13 +315,13 @@ LIMIT 25`,
                           <div
                             key={col.name}
                             onClick={() => insertText(col.name)}
-                            className="flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-white cursor-pointer text-[11px] group transition-colors border border-transparent hover:border-slate-200"
+                            className="flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-white cursor-pointer text-[11px] group transition-colors border border-transparent hover:border-slate-200 gap-2"
                             title="Click to insert column into SQL"
                           >
-                            <span className="text-slate-700 font-mono group-hover:text-sc-blue font-medium">
+                            <span className="text-slate-700 font-mono group-hover:text-sc-blue font-medium truncate" title={col.name}>
                               {col.name}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-mono">
+                            <span className="text-[10px] text-slate-400 font-mono shrink-0">
                               {col.type}
                             </span>
                           </div>
@@ -322,12 +333,12 @@ LIMIT 25`,
               })}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Right: SQL Editor & Output */}
-        <div className="lg:col-span-9 flex flex-col space-y-6">
+        <div className="lg:col-span-8 xl:col-span-9 flex flex-col space-y-6">
           {/* SQL Editor Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col space-y-3.5">
+          <Card className="p-5 shadow-xs flex flex-col space-y-3.5">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <Code2 className="w-4 h-4 text-sc-navy" />
@@ -381,10 +392,12 @@ LIMIT 25`,
                 className="py-2.5 px-6 rounded-xl font-semibold text-xs text-white bg-sc-green hover:bg-sc-green-hover active:scale-[0.99] transition-all flex items-center space-x-2 shadow-xs disabled:opacity-50 cursor-pointer"
               >
                 {isExecuting ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Executing on Trino...</span>
-                  </>
+                  <Loader
+                    size="sm"
+                    color="white"
+                    variant="inline"
+                    text="Executing on Trino..."
+                  />
                 ) : (
                   <>
                     <Play className="w-3.5 h-3.5 fill-current" />
@@ -393,7 +406,20 @@ LIMIT 25`,
                 )}
               </button>
             </div>
-          </div>
+          </Card>
+
+          {/* While executing: Loading State */}
+          {isExecuting && (
+            <Card className="p-8 shadow-xs animate-in fade-in">
+              <Loader
+                variant="card"
+                size="lg"
+                color="sc"
+                text="Executing Distributed SQL Query on Trino"
+                subtext="Planning query execution, scanning Iceberg manifest lists, and aggregating row splits across MinIO..."
+              />
+            </Card>
+          )}
 
           {/* Error Message */}
           {queryError && (
@@ -412,7 +438,7 @@ LIMIT 25`,
 
           {/* Results Grid */}
           {result && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4 animate-in fade-in">
+            <Card className="p-5 shadow-xs space-y-4 animate-in fade-in">
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-4 text-xs font-mono">
                   <div className="flex items-center space-x-1.5 text-sc-green font-bold">
@@ -449,65 +475,17 @@ LIMIT 25`,
               </div>
 
               {/* Data Table */}
-              <div className="overflow-x-auto max-h-[500px] rounded-xl border border-slate-200 bg-white shadow-xs">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-50 text-slate-700 sticky top-0 z-10 border-b border-slate-200">
-                    <tr>
-                      <th className="py-2.5 px-3 font-mono text-[11px] text-slate-400 w-12 text-center border-r border-slate-200">
-                        #
-                      </th>
-                      {result.columns.map((col) => (
-                        <th
-                          key={col.name}
-                          className="py-2.5 px-4 font-mono font-bold tracking-wide border-r border-slate-200 last:border-r-0"
-                        >
-                          <div className="flex flex-col">
-                            <span className="text-slate-900">{col.name}</span>
-                            <span className="text-[10px] text-slate-500 font-normal">
-                              {col.type}
-                            </span>
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-mono text-slate-700">
-                    {result.rows.map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-slate-50/80 transition-colors even:bg-slate-50/40"
-                      >
-                        <td className="py-2.5 px-3 text-[11px] text-slate-400 text-center border-r border-slate-100">
-                          {idx + 1}
-                        </td>
-                        {row.map((cell, cIdx) => (
-                          <td
-                            key={cIdx}
-                            className="py-2.5 px-4 border-r border-slate-100 last:border-r-0 truncate max-w-xs"
-                          >
-                            {cell === null || cell === undefined ? (
-                              <span className="text-slate-400 italic">null</span>
-                            ) : typeof cell === 'boolean' ? (
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                  cell
-                                    ? 'bg-sc-green-light text-sc-green'
-                                    : 'bg-rose-100 text-rose-700'
-                                }`}
-                              >
-                                {cell ? 'TRUE' : 'FALSE'}
-                              </span>
-                            ) : (
-                              String(cell)
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+              <DataTable
+                columns={result.columns.map((col) => ({
+                  key: col.name,
+                  label: col.name,
+                  type: col.type,
+                }))}
+                data={result.rows}
+                maxHeight="520px"
+                showIndex={true}
+              />
+            </Card>
           )}
         </div>
       </div>

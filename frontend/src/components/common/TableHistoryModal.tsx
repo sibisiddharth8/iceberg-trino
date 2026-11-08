@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, GitCommit, Clock, Check, Copy, ArrowRight } from 'lucide-react';
 import type { SnapshotHistoryItem } from '../../types';
+import { Loader } from './Loader';
 
 interface TableHistoryModalProps {
   tableName: string | null;
@@ -68,10 +69,13 @@ export function TableHistoryModal({
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1 bg-slate-50">
           {isLoading ? (
-            <div className="py-12 text-center">
-              <div className="inline-block w-6 h-6 border-2 border-sc-green border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-xs text-slate-500 mt-2 font-medium">Fetching Iceberg metadata snapshots...</p>
-            </div>
+            <Loader
+              variant="card"
+              size="md"
+              color="sc"
+              text="Auditing Iceberg Snapshot Lineage"
+              subtext="Fetching commit metadata and snapshot manifests from MinIO..."
+            />
           ) : history.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-xs">
               No snapshots recorded for this table yet.

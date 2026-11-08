@@ -22,7 +22,7 @@ export function AppLayout() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-50 text-slate-800 flex flex-col font-sans">
+    <div className="h-screen w-full overflow-hidden bg-slate-50 text-slate-800 flex flex-col font-sans">
       {/* Fixed Header */}
       <TopNavbar />
 
@@ -32,8 +32,8 @@ export function AppLayout() {
         <Sidebar />
 
         {/* Scrollable Main Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto w-full pb-8">
             <Outlet />
           </div>
         </main>
