@@ -22,14 +22,20 @@ export function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+    <div className="h-screen w-screen overflow-hidden bg-slate-50 text-slate-800 flex flex-col font-sans">
+      {/* Fixed Header */}
       <TopNavbar />
 
-      <div className="flex flex-1">
+      {/* Body containing Pinned Sidebar and Scrollable Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Pinned Left Sidebar */}
         <Sidebar />
 
-        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto overflow-x-hidden">
-          <Outlet />
+        {/* Scrollable Main Content */}
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto w-full">
+            <Outlet />
+          </div>
         </main>
       </div>
 
@@ -43,4 +49,3 @@ export function AppLayout() {
     </div>
   );
 }
-

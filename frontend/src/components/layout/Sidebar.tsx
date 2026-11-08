@@ -41,7 +41,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-sc-navy flex flex-col shrink-0 text-slate-300 border-r border-sc-navy-dark select-none min-h-[calc(100vh-4rem)]">
+    <aside className="w-64 bg-sc-navy flex flex-col shrink-0 text-slate-300 border-r border-sc-navy-dark select-none h-full overflow-y-auto">
       {/* Navigation Links */}
       <div className="p-4 flex-1 space-y-1.5">
         <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -113,12 +113,14 @@ export function Sidebar() {
             <HardDrive className="w-3.5 h-3.5 text-sc-green" />
             <span>Warehouse</span>
           </span>
-          <span className="font-mono text-slate-300">s3://finance-lake</span>
+          <span className="font-mono text-slate-300 truncate max-w-[120px]" title={import.meta.env.VITE_WAREHOUSE_LOCATION || 's3://finance-lake'}>
+            {import.meta.env.VITE_WAREHOUSE_LOCATION?.replace(/\/warehouse\/?$/, '') || 's3://finance-lake'}
+          </span>
         </div>
         <div className="flex items-center justify-between text-[11px] text-slate-400">
           <span>MinIO Console</span>
           <a
-            href="http://localhost:9001"
+            href={import.meta.env.VITE_MINIO_CONSOLE_URL || 'http://localhost:9001'}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center space-x-1 text-sc-blue hover:text-white font-mono"

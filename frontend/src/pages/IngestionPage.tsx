@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useLakehouse } from '../context/LakehouseContext';
+import { tableService, AppApiError } from '../services';
 import type {
   SampleItem,
   IngestResponseData,
@@ -49,52 +50,35 @@ export function IngestionPage() {
     setMismatchDetails(null);
 
     try {
-      let res: Response;
+      let data: IngestResponseData;
 
       if (sourceType === 'file') {
         if (!selectedFile) {
           throw new Error('Please select a local .parquet file');
         }
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('tableName', tableName);
-        formData.append('namespace', namespace);
-
-        res = await fetch('/api/tables/ingest', {
-          method: 'POST',
-          body: formData,
-        });
+        data = await tableService.uploadAndIngestParquet(selectedFile, tableName, namespace);
       } else {
         if (!s3Path.trim()) {
           throw new Error('Please enter a MinIO S3 URI or direct link');
         }
-        res = await fetch('/api/tables/ingest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            source: s3Path.trim(),
-            tableName: tableName.trim(),
-            namespace: namespace.trim(),
-          }),
+        data = await tableService.ingestParquetLink({
+          source: s3Path.trim(),
+          tableName: tableName.trim(),
+          namespace: namespace.trim(),
         });
       }
 
-      const body = await res.json();
-
-      if (!res.ok || !body.success) {
-        if (body?.error?.code === 'SCHEMA_MISMATCH') {
-          setErrorMessage(body.error.message);
-          setMismatchDetails(body.error.details as SchemaMismatchDetails);
-        } else {
-          setErrorMessage(body?.error?.message || body?.message || 'Ingestion failed');
-        }
-        return;
-      }
-
-      setSuccessResult(body.data as IngestResponseData);
+      setSuccessResult(data);
       refreshTables();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Network error occurred');
+      if (err instanceof AppApiError) {
+        setErrorMessage(err.message);
+        if (err.code === 'SCHEMA_MISMATCH' && err.details) {
+          setMismatchDetails(err.details as SchemaMismatchDetails);
+        }
+      } else {
+        setErrorMessage(err?.message || 'Network error occurred');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -416,18 +400,18 @@ export function IngestionPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
-                    <span>
-                      <strong className="text-slate-800">{tbl.columns.length}</strong> columns •{' '}
-                      <strong className="text-slate-800">{tbl.snapshotCount}</strong> versions
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100 gap-2">
+                    <span className="truncate">
+                      <strong className="text-slate-800">{tbl.columns.length}</strong> cols •{' '}
+                      <strong className="text-slate-800">{tbl.snapshotCount}</strong> vers
                     </span>
 
                     <button
                       onClick={() => openHistoryModal(tbl.tableName)}
-                      className="inline-flex items-center space-x-1 text-sc-blue hover:text-sc-blue-hover font-semibold"
+                      className="inline-flex items-center space-x-1 text-sc-blue hover:text-sc-blue-hover font-semibold px-2 py-0.5 rounded bg-sc-blue-light/50 hover:bg-sc-blue-light border border-sc-blue/20 shrink-0 text-[11px]"
                     >
-                      <History className="w-3.5 h-3.5" />
-                      <span>Version Lineage</span>
+                      <History className="w-3 h-3" />
+                      <span>Lineage ({tbl.snapshotCount})</span>
                     </button>
                   </div>
                 </div>

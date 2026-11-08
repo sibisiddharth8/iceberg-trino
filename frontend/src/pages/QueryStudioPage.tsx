@@ -12,12 +12,14 @@ import {
   Sparkles,
   Search,
   Check,
+  History,
 } from 'lucide-react';
 import { useLakehouse } from '../context/LakehouseContext';
+import { queryService, AppApiError } from '../services';
 import type { QueryResultData } from '../types';
 
 export function QueryStudioPage() {
-  const { tables, injectedQuery, setInjectedQuery } = useLakehouse();
+  const { tables, injectedQuery, setInjectedQuery, openHistoryModal } = useLakehouse();
   const [searchParams] = useSearchParams();
 
   const defaultSql = `SELECT 
@@ -92,7 +94,32 @@ GROUP BY state
 ORDER BY total_spent DESC`,
     },
     {
-      name: '⏳ Iceberg Snapshots & History',
+      name: '⏳ Iceberg Version Time-Travel',
+      desc: 'Queries table as of an earlier snapshot version ID (e.g. 50 records)',
+      sql: `-- Query transactions table exactly as it existed at Version 1 (50 rows)
+-- In Iceberg + Trino, use: FOR VERSION AS OF <snapshot_id>
+SELECT 
+    transaction_id,
+    customer_id,
+    transaction_date,
+    transaction_amount,
+    transaction_status
+FROM iceberg.banking.transactions FOR VERSION AS OF 8278352813902851825
+LIMIT 25`,
+    },
+    {
+      name: '🔍 Version Diff (V2 minus V1)',
+      desc: 'Returns only the newly added records in Version 2',
+      sql: `-- Returns only the 100 records added in Version 2 (Head Version minus Version 1)
+SELECT transaction_id, customer_id, transaction_amount, transaction_date, merchant_category
+FROM iceberg.banking.transactions FOR VERSION AS OF 810541187169676779
+EXCEPT
+SELECT transaction_id, customer_id, transaction_amount, transaction_date, merchant_category
+FROM iceberg.banking.transactions FOR VERSION AS OF 8278352813902851825
+LIMIT 25`,
+    },
+    {
+      name: '📜 Table Snapshots Audit Log',
       desc: 'Inspects Iceberg internal snapshot metadata directly from Trino',
       sql: `SELECT 
     snapshot_id,
@@ -127,22 +154,14 @@ LIMIT 25`,
     setResult(null);
 
     try {
-      const res = await fetch('/api/query/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.trim(), limit: maxRows }),
-      });
-
-      const body = await res.json();
-
-      if (!res.ok || !body.success) {
-        setQueryError(body?.error?.message || body?.message || 'Query execution failed');
-        return;
-      }
-
-      setResult(body.data as QueryResultData);
+      const data = await queryService.executeSql(query.trim(), maxRows);
+      setResult(data);
     } catch (err: any) {
-      setQueryError(err.message || 'Network error occurred');
+      if (err instanceof AppApiError) {
+        setQueryError(err.message);
+      } else {
+        setQueryError(err?.message || 'Query execution failed');
+      }
     } finally {
       setIsExecuting(false);
     }
@@ -265,12 +284,20 @@ LIMIT 25`,
 
                     {isSelected && (
                       <div className="px-3 pb-3 pt-1 border-t border-slate-100 bg-slate-50 space-y-1">
-                        <div className="flex justify-end mb-1">
+                        <div className="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-slate-200/70 text-[10px]">
+                          <button
+                            onClick={() => openHistoryModal(tbl.tableName)}
+                            className="text-sc-blue hover:text-sc-blue-hover font-bold flex items-center space-x-1 shrink-0"
+                            title="View all snapshot version IDs and time-travel queries"
+                          >
+                            <History className="w-3 h-3 text-sc-green" />
+                            <span>Lineage ({tbl.snapshotCount})</span>
+                          </button>
                           <button
                             onClick={() => insertText(`iceberg.${tbl.identifier}`)}
-                            className="text-[10px] text-sc-blue hover:text-sc-blue-hover font-semibold"
+                            className="text-slate-500 hover:text-slate-800 font-semibold truncate"
                           >
-                            + Insert table name
+                            + Insert
                           </button>
                         </div>
                         {tbl.columns.map((col) => (

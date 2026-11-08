@@ -117,21 +117,21 @@ export function CatalogPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
                     onClick={() => openHistoryModal(activeTable.tableName)}
-                    className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors"
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors shrink-0"
                   >
-                    <History className="w-4 h-4 text-slate-500" />
-                    <span>View Lineage ({activeTable.snapshotCount})</span>
+                    <History className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Lineage ({activeTable.snapshotCount})</span>
                   </button>
 
                   <Link
                     to={`/query?table=${activeTable.tableName}`}
-                    className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-sc-green hover:bg-sc-green-hover text-white text-xs font-semibold shadow-xs transition-colors"
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sc-green hover:bg-sc-green-hover text-white text-xs font-semibold shadow-xs transition-colors shrink-0"
                   >
-                    <Terminal className="w-4 h-4" />
-                    <span>Query in Studio</span>
+                    <Terminal className="w-3.5 h-3.5" />
+                    <span>Query</span>
                   </Link>
                 </div>
               </div>

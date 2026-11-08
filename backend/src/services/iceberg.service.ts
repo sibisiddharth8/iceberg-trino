@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { AppError } from "../errors/AppError.js";
 
+import { config } from "../config/env.js";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "../../../");
 
@@ -11,7 +13,7 @@ const defaultPython =
     ? path.resolve(rootDir, ".venv/Scripts/python.exe")
     : path.resolve(rootDir, ".venv/bin/python");
 
-const pythonPath = process.env.PYTHON_PATH || defaultPython;
+const pythonPath = config.pythonPath || defaultPython;
 const scriptPath = path.resolve(rootDir, "scripts/iceberg_manager.py");
 
 export interface IngestResult {
@@ -130,7 +132,7 @@ export async function ingestParquet(options: {
     "--table",
     options.tableName,
     "--namespace",
-    options.namespace || "banking",
+    options.namespace || config.iceberg.defaultNamespace,
   ];
 
   return runIcebergManager<IngestResult>(args);
@@ -147,7 +149,7 @@ export async function listIcebergTables(): Promise<TableSummary[]> {
 
 export async function getTableHistory(
   tableName: string,
-  namespace = "banking"
+  namespace = config.iceberg.defaultNamespace
 ): Promise<SnapshotHistoryItem[]> {
   const result = await runIcebergManager<{
     success: boolean;

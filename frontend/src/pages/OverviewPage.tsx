@@ -199,21 +199,22 @@ export function OverviewPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-100 text-xs">
                   <button
                     onClick={() => openHistoryModal(table.tableName)}
-                    className="inline-flex items-center space-x-1 text-slate-600 hover:text-slate-900 font-medium"
+                    className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold border border-slate-200 transition-colors text-[11px] shrink-0"
+                    title={`View ${table.snapshotCount} snapshot versions`}
                   >
-                    <History className="w-3.5 h-3.5 text-slate-400" />
-                    <span>View Lineage ({table.snapshotCount})</span>
+                    <History className="w-3 h-3 text-slate-500" />
+                    <span>Lineage ({table.snapshotCount})</span>
                   </button>
 
                   <Link
                     to={`/query?table=${table.tableName}`}
-                    className="inline-flex items-center space-x-1 text-sc-blue hover:text-sc-blue-hover font-semibold"
+                    className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-sc-blue-light hover:bg-sc-blue/15 text-sc-blue font-semibold transition-colors text-[11px] shrink-0"
                   >
-                    <span>Query in Studio</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Query</span>
+                    <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>

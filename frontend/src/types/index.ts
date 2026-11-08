@@ -64,3 +64,15 @@ export interface QueryResultData {
   queryId?: string;
 }
 
+export interface ApiErrorPayload {
+  code: string;
+  message: string;
+  details?: unknown;
+}
+
+export interface ApiResponseEnvelope<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  error?: ApiErrorPayload;
+}

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { TableSummary, SampleItem, SnapshotHistoryItem } from '../types';
+import { tableService } from '../services';
 
 interface LakehouseContextType {
   tables: TableSummary[];
@@ -33,11 +34,8 @@ export function LakehouseProvider({ children }: { children: ReactNode }) {
 
   const fetchTables = async () => {
     try {
-      const res = await fetch('/api/tables');
-      const body = await res.json();
-      if (body.success) {
-        setTables(body.data);
-      }
+      const data = await tableService.listTables();
+      setTables(data);
     } catch (err) {
       console.error('Failed to fetch tables:', err);
     }
@@ -45,11 +43,8 @@ export function LakehouseProvider({ children }: { children: ReactNode }) {
 
   const fetchSamples = async () => {
     try {
-      const res = await fetch('/api/tables/samples');
-      const body = await res.json();
-      if (body.success) {
-        setSamples(body.data);
-      }
+      const data = await tableService.getSamples();
+      setSamples(data);
     } catch (err) {
       console.error('Failed to fetch samples:', err);
     }
@@ -69,13 +64,8 @@ export function LakehouseProvider({ children }: { children: ReactNode }) {
     setHistoryTableName(tableName);
     setIsLoadingHistory(true);
     try {
-      const res = await fetch(`/api/tables/${tableName}/history`);
-      const body = await res.json();
-      if (body.success) {
-        setTableHistory(body.data);
-      } else {
-        setTableHistory([]);
-      }
+      const data = await tableService.getTableHistory(tableName);
+      setTableHistory(data);
     } catch (err) {
       console.error('Failed to fetch history:', err);
       setTableHistory([]);
@@ -117,4 +107,3 @@ export function useLakehouse() {
   }
   return context;
 }
-

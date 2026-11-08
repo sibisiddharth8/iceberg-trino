@@ -7,6 +7,8 @@ import queryRoutes from "./routes/query.routes.js";
 import { notFoundHandler } from "./middlewares/notFound.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
+import { config } from "./config/env.js";
+
 const app = express();
 
 app.use(cors());
@@ -29,7 +31,7 @@ app.use(notFoundHandler);
 // Must come last
 app.use(errorHandler);
 
-const PORT = Number(process.env.PORT ?? 3001);
+const PORT = config.port;
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

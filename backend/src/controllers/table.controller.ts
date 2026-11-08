@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { AppError } from "../errors/AppError.js";
+import { config } from "../config/env.js";
 import {
   ingestParquet,
   listIcebergTables,
@@ -39,7 +40,7 @@ export const ingestTableController: RequestHandler = asyncHandler(
     // Sanitize table name (letters, numbers, underscores)
     tableName = tableName.replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase();
 
-    const namespace = req.body?.namespace?.trim() || "banking";
+    const namespace = req.body?.namespace?.trim() || config.iceberg.defaultNamespace;
 
     try {
       const result = await ingestParquet({
@@ -69,7 +70,7 @@ export const getTableHistoryController: RequestHandler = asyncHandler(
   async (req, res) => {
     const rawTableName = req.params.tableName;
     const tableName = Array.isArray(rawTableName) ? rawTableName[0] : rawTableName;
-    const namespace = (req.query.namespace as string) || "banking";
+    const namespace = (req.query.namespace as string) || config.iceberg.defaultNamespace;
 
     if (!tableName) {
       throw new AppError(400, "Table name is required", "MISSING_PARAM");
@@ -84,11 +85,12 @@ export const getTableHistoryController: RequestHandler = asyncHandler(
 
 export const getSamplesController: RequestHandler = asyncHandler(
   async (_req, res) => {
+    const bucket = config.minio.bucket;
     const samples = [
       {
         id: "tx-v1",
         name: "Transactions V1 (Initial Table)",
-        s3Uri: "s3://finance-lake/uploads/transactions_v1.parquet",
+        s3Uri: `s3://${bucket}/uploads/transactions_v1.parquet`,
         targetTable: "transactions",
         records: 50,
         description: "Creates 'transactions' table with 50 records and sets baseline schema (Version 1)",
@@ -97,7 +99,7 @@ export const getSamplesController: RequestHandler = asyncHandler(
       {
         id: "tx-v2",
         name: "Transactions V2 (Version +100 Rows)",
-        s3Uri: "s3://finance-lake/uploads/transactions_v2.parquet",
+        s3Uri: `s3://${bucket}/uploads/transactions_v2.parquet`,
         targetTable: "transactions",
         records: 100,
         description: "Appends 100 records to 'transactions' (matching schema). Total becomes 150 records (Version 2)",
@@ -106,7 +108,7 @@ export const getSamplesController: RequestHandler = asyncHandler(
       {
         id: "tx-mismatch",
         name: "Transactions Mismatch (Schema Error Test)",
-        s3Uri: "s3://finance-lake/uploads/transactions_mismatch.parquet",
+        s3Uri: `s3://${bucket}/uploads/transactions_mismatch.parquet`,
         targetTable: "transactions",
         records: 20,
         description: "Intentionally mismatched columns (fraud_risk_score instead of transaction_hour) to test error handling",
@@ -115,7 +117,7 @@ export const getSamplesController: RequestHandler = asyncHandler(
       {
         id: "cust",
         name: "Customers (For Relational JOINs)",
-        s3Uri: "s3://finance-lake/uploads/customers.parquet",
+        s3Uri: `s3://${bucket}/uploads/customers.parquet`,
         targetTable: "customers",
         records: 500,
         description: "Creates 'customers' table with 500 customer profiles sharing customer_id with transactions",
