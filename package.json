@@ -1,0 +1,14 @@
+{
+  "name": "finance-analytics-lakehouse",
+  "version": "1.0.0",
+  "description": "Financial Markets Analytics Platform with Apache Iceberg, Trino SQL, and MinIO",
+  "scripts": {
+    "empty": "python scripts/empty_data.py",
+    "reset": "python scripts/empty_data.py",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "test:iceberg": "python scripts/test_iceberg.py"
+  }
+}
+
