@@ -7,6 +7,8 @@ import {
   listTablesController,
   getTableHistoryController,
   getSamplesController,
+  dropTableController,
+  clearAllTablesController,
 } from "../controllers/table.controller.js";
 
 const upload = multer({
@@ -20,6 +22,8 @@ const router = Router();
 
 router.get("/", listTablesController);
 router.get("/samples", getSamplesController);
+router.post("/clear", clearAllTablesController);
+router.delete("/:tableName", dropTableController);
 router.get("/:tableName/history", getTableHistoryController);
 router.post("/ingest", upload.single("file"), ingestTableController);
 

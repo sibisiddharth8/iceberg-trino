@@ -8,6 +8,8 @@ import {
   ingestParquet,
   listIcebergTables,
   getTableHistory,
+  dropIcebergTable,
+  clearAllIcebergTables,
 } from "../services/iceberg.service.js";
 
 export const ingestTableController: RequestHandler = asyncHandler(
@@ -130,3 +132,26 @@ export const getSamplesController: RequestHandler = asyncHandler(
     );
   }
 );
+
+export const dropTableController: RequestHandler = asyncHandler(
+  async (req, res) => {
+    const rawTableName = req.params.tableName;
+    const tableName = Array.isArray(rawTableName) ? rawTableName[0] : rawTableName;
+    const namespace = (req.query.namespace as string) || config.iceberg.defaultNamespace;
+
+    if (!tableName) {
+      throw new AppError(400, "Table name is required", "MISSING_PARAM");
+    }
+
+    const result = await dropIcebergTable(tableName, namespace);
+    res.status(200).json(apiResponse(result, result.message));
+  }
+);
+
+export const clearAllTablesController: RequestHandler = asyncHandler(
+  async (_req, res) => {
+    const result = await clearAllIcebergTables();
+    res.status(200).json(apiResponse(result, result.message));
+  }
+);
+

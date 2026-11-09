@@ -10,6 +10,8 @@ import {
   History,
   FileText,
   Sparkles,
+  Trash2,
+  RotateCcw,
 } from 'lucide-react';
 import { useLakehouse } from '../context/LakehouseContext';
 import { tableService, AppApiError } from '../services';
@@ -30,9 +32,14 @@ export function IngestionPage() {
   const [namespace, setNamespace] = useState('banking');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [runningScenarioId, setRunningScenarioId] = useState<string | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
+  const [droppingTable, setDroppingTable] = useState<string | null>(null);
+
   const [successResult, setSuccessResult] = useState<IngestResponseData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [mismatchDetails, setMismatchDetails] = useState<SchemaMismatchDetails | null>(null);
+  const [infoNotice, setInfoNotice] = useState<string | null>(null);
 
   const handleApplySample = (sample: SampleItem) => {
     setSourceType('link');
@@ -41,6 +48,40 @@ export function IngestionPage() {
     setSuccessResult(null);
     setErrorMessage(null);
     setMismatchDetails(null);
+    setInfoNotice(`Loaded parameters for "${sample.name}". Click "Push Parquet into Iceberg Table" below or edit values.`);
+  };
+
+  const handleRunScenario = async (sample: SampleItem) => {
+    setRunningScenarioId(sample.id);
+    setSourceType('link');
+    setS3Path(sample.s3Uri);
+    setTableName(sample.targetTable);
+    setSuccessResult(null);
+    setErrorMessage(null);
+    setMismatchDetails(null);
+    setInfoNotice(null);
+
+    try {
+      const data = await tableService.ingestParquetLink({
+        source: sample.s3Uri,
+        tableName: sample.targetTable,
+        namespace,
+      });
+
+      setSuccessResult(data);
+      refreshTables();
+    } catch (err: any) {
+      if (err instanceof AppApiError) {
+        setErrorMessage(err.message);
+        if (err.code === 'SCHEMA_MISMATCH' && err.details) {
+          setMismatchDetails(err.details as SchemaMismatchDetails);
+        }
+      } else {
+        setErrorMessage(err?.message || 'Network error occurred');
+      }
+    } finally {
+      setRunningScenarioId(null);
+    }
   };
 
   const handleIngest = async (e: FormEvent) => {
@@ -49,6 +90,7 @@ export function IngestionPage() {
     setSuccessResult(null);
     setErrorMessage(null);
     setMismatchDetails(null);
+    setInfoNotice(null);
 
     try {
       let data: IngestResponseData;
@@ -85,6 +127,45 @@ export function IngestionPage() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!window.confirm('Are you sure you want to delete all Iceberg tables and clear warehouse storage?')) {
+      return;
+    }
+
+    setIsClearing(true);
+    setSuccessResult(null);
+    setErrorMessage(null);
+    setMismatchDetails(null);
+    setInfoNotice(null);
+
+    try {
+      const res = await tableService.clearAllTables();
+      setInfoNotice(res.message || 'All Iceberg tables successfully cleared. Ready for fresh baseline testing.');
+      await refreshTables();
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to clear tables');
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const handleDropTable = async (tblName: string) => {
+    if (!window.confirm(`Are you sure you want to drop table "${tblName}"?`)) {
+      return;
+    }
+
+    setDroppingTable(tblName);
+    try {
+      await tableService.dropTable(tblName, namespace);
+      setInfoNotice(`Table "${tblName}" dropped successfully.`);
+      await refreshTables();
+    } catch (err: any) {
+      setErrorMessage(err?.message || `Failed to drop table "${tblName}"`);
+    } finally {
+      setDroppingTable(null);
+    }
+  };
+
   if (isInitialLoading) {
     return (
       <PageLoader
@@ -97,65 +178,129 @@ export function IngestionPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Page Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-          Parquet Ingestion & Table Versioning
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Upload Parquet files or specify MinIO storage URIs. The first upload freezes the table schema; subsequent uploads validate schema consistency and append versioned snapshots.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Parquet Ingestion & Table Versioning
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Upload Parquet files or specify MinIO storage URIs. The first upload freezes the table schema; subsequent uploads validate schema consistency and append versioned snapshots.
+          </p>
+        </div>
+
+        {/* Clear / Reset All Tables Button */}
+        <button
+          type="button"
+          onClick={handleClearAll}
+          disabled={isClearing || tables.length === 0}
+          className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+          title="Drop all Iceberg tables and wipe warehouse data"
+        >
+          {isClearing ? (
+            <Loader size="xs" color="sc" variant="inline" text="Clearing..." />
+          ) : (
+            <>
+              <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+              <span>Reset / Clear Catalog ({tables.length})</span>
+            </>
+          )}
+        </button>
       </div>
+
+      {/* Info notice banner */}
+      {infoNotice && (
+        <div className="p-3.5 rounded-xl bg-sc-blue-light border border-sc-blue/20 text-xs text-sc-blue font-medium flex items-center justify-between animate-in fade-in">
+          <span>{infoNotice}</span>
+          <button
+            onClick={() => setInfoNotice(null)}
+            className="text-[11px] underline ml-2 cursor-pointer font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* 1. Quick Presets Bar */}
       <Card className="p-5 space-y-3">
-        <div className="flex items-center space-x-2">
-          <Sparkles className="w-4 h-4 text-sc-green" />
-          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-            1-Click Test Scenarios (Sample Datasets)
-          </h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-sc-green" />
+            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              1-Click Test Scenarios (Sample Datasets)
+            </h2>
+          </div>
+          <span className="text-[11px] text-slate-400">
+            Click <strong>Run Scenario</strong> to execute immediately
+          </span>
         </div>
         <p className="text-xs text-slate-500">
-          Click any preset below to auto-fill the form and test baseline creation, incremental append (+100 rows), schema mismatch error rejection, or relational JOINs:
+          Click <strong>Run Scenario</strong> below to execute immediately with real-time PyIceberg snapshot creation, schema enforcement, or mismatch error rejection:
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-          {samples.map((sample) => (
-            <button
-              key={sample.id}
-              onClick={() => handleApplySample(sample)}
-              className="text-left p-4 rounded-xl bg-slate-50 border border-slate-200 hover:border-sc-blue hover:bg-sc-blue-light/30 transition-all group flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2 gap-2">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      sample.tag.includes('Error')
-                        ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                        : sample.tag.includes('V1')
-                        ? 'bg-sc-blue-light text-sc-blue border border-sc-blue/20'
-                        : sample.tag.includes('V2')
-                        ? 'bg-sc-green-light text-sc-green-hover border border-sc-green/30'
-                        : 'bg-purple-100 text-purple-700 border border-purple-200'
-                    }`}
-                  >
-                    {sample.tag}
-                  </span>
-                  <span className="text-[11px] text-slate-500 font-mono font-medium shrink-0">
-                    {sample.records} rows
-                  </span>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-1">
+          {samples.map((sample) => {
+            const isThisRunning = runningScenarioId === sample.id;
+            return (
+              <div
+                key={sample.id}
+                className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-all flex flex-col justify-between space-y-3"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                        sample.tag.includes('Error')
+                          ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                          : sample.tag.includes('V1')
+                          ? 'bg-sc-blue-light text-sc-blue border border-sc-blue/20'
+                          : sample.tag.includes('V2')
+                          ? 'bg-sc-green-light text-sc-green-hover border border-sc-green/30'
+                          : 'bg-purple-100 text-purple-700 border border-purple-200'
+                      }`}
+                    >
+                      {sample.tag}
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-mono font-medium shrink-0">
+                      {sample.records} rows
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-900">
+                    {sample.name}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                    {sample.description}
+                  </p>
                 </div>
-                <h3 className="text-xs font-bold text-slate-900 group-hover:text-sc-blue transition-colors">
-                  {sample.name}
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                  {sample.description}
-                </p>
+
+                <div className="pt-2.5 border-t border-slate-200/80 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleApplySample(sample)}
+                    className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold cursor-pointer"
+                    title="Copy URI and parameters to form"
+                  >
+                    Edit in Form
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRunScenario(sample)}
+                    disabled={isThisRunning || isLoading}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-sc-green hover:bg-sc-green-hover active:scale-[0.98] transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                  >
+                    {isThisRunning ? (
+                      <Loader size="xs" color="white" variant="inline" text="Executing..." />
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3 fill-current" />
+                        <span>Run Scenario</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="mt-3 pt-2.5 border-t border-slate-200/80 flex items-center text-[11px] text-sc-blue font-semibold">
-                <span>Load Scenario</span>
-                <Play className="w-3 h-3 ml-1 transition-transform group-hover:translate-x-0.5" />
-              </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
@@ -183,7 +328,7 @@ export function IngestionPage() {
               <button
                 type="button"
                 onClick={() => setSourceType('link')}
-                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all ${
+                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all cursor-pointer ${
                   sourceType === 'link'
                     ? 'bg-white text-sc-navy shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
@@ -195,7 +340,7 @@ export function IngestionPage() {
               <button
                 type="button"
                 onClick={() => setSourceType('file')}
-                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all ${
+                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all cursor-pointer ${
                   sourceType === 'file'
                     ? 'bg-white text-sc-navy shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
@@ -278,8 +423,8 @@ export function IngestionPage() {
             <div className="pt-3">
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full py-3 px-4 rounded-xl font-semibold text-xs text-white bg-sc-green hover:bg-sc-green-hover active:scale-[0.99] transition-all flex items-center justify-center space-x-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading || runningScenarioId !== null}
+                className="w-full py-3 px-4 rounded-xl font-semibold text-xs text-white bg-sc-green hover:bg-sc-green-hover active:scale-[0.99] transition-all flex items-center justify-center space-x-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isLoading ? (
                   <Loader
@@ -386,11 +531,11 @@ export function IngestionPage() {
 
           {tables.length === 0 ? (
             <Card className="p-8 text-center border-dashed">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 font-medium">
                 No Iceberg tables created yet.
               </p>
               <p className="text-[11px] text-slate-400 mt-1">
-                Use the form or click Scenario 1 to initialize your first table!
+                Click <strong>"Run Scenario"</strong> on <strong>Scenario 1 (Transactions V1)</strong> above to initialize your first table!
               </p>
             </Card>
           ) : (
@@ -418,13 +563,24 @@ export function IngestionPage() {
                       <strong className="text-slate-800">{tbl.snapshotCount}</strong> vers
                     </span>
 
-                    <button
-                      onClick={() => openHistoryModal(tbl.tableName)}
-                      className="inline-flex items-center space-x-1 text-sc-blue hover:text-sc-blue-hover font-semibold px-2 py-0.5 rounded bg-sc-blue-light/50 hover:bg-sc-blue-light border border-sc-blue/20 shrink-0 text-[11px] cursor-pointer"
-                    >
-                      <History className="w-3 h-3" />
-                      <span>Lineage ({tbl.snapshotCount})</span>
-                    </button>
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <button
+                        onClick={() => openHistoryModal(tbl.tableName)}
+                        className="inline-flex items-center space-x-1 text-sc-blue hover:text-sc-blue-hover font-semibold px-2 py-0.5 rounded bg-sc-blue-light/50 hover:bg-sc-blue-light border border-sc-blue/20 shrink-0 text-[11px] cursor-pointer"
+                      >
+                        <History className="w-3 h-3" />
+                        <span>Lineage ({tbl.snapshotCount})</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDropTable(tbl.tableName)}
+                        disabled={droppingTable === tbl.tableName}
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                        title={`Drop table ${tbl.tableName}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </Card>
               ))}

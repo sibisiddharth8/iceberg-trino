@@ -73,6 +73,27 @@ export const tableService = {
     );
     return response.data.data;
   },
+
+  /**
+   * Drops a specific table from the catalog and purges its warehouse files.
+   */
+  async dropTable(tableName: string, namespace = 'banking'): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.delete<ApiResponseEnvelope<{ success: boolean; message: string }>>(
+      `/tables/${encodeURIComponent(tableName)}`,
+      { params: { namespace } }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Wipes all Iceberg tables and clears the warehouse data in MinIO.
+   */
+  async clearAllTables(): Promise<{ success: boolean; dropped: string[]; message: string }> {
+    const response = await apiClient.post<ApiResponseEnvelope<{ success: boolean; dropped: string[]; message: string }>>(
+      '/tables/clear'
+    );
+    return response.data.data;
+  },
 };
 
 export default tableService;

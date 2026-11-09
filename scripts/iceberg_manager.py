@@ -341,6 +341,40 @@ def handle_history(args):
         print(json.dumps({"success": False, "error": "NOT_FOUND", "message": str(e)}))
         sys.exit(1)
 
+def handle_drop_table(args):
+    catalog = get_catalog()
+    identifier = f"{args.namespace.strip()}.{args.table.strip()}"
+    try:
+        catalog.drop_table(identifier)
+        s3 = get_s3_fs()
+        warehouse_path = f"finance-lake/warehouse/{args.namespace.strip()}/{args.table.strip()}"
+        if s3.exists(warehouse_path):
+            s3.rm(warehouse_path, recursive=True)
+        print(json.dumps({"success": True, "message": f"Table '{identifier}' dropped successfully."}))
+    except Exception as e:
+        print(json.dumps({"success": False, "error": "DROP_ERROR", "message": str(e)}))
+        sys.exit(1)
+
+def handle_clear_all(args):
+    catalog = get_catalog()
+    dropped = []
+    for ns_tuple in catalog.list_namespaces():
+        ns = ns_tuple[0]
+        for tbl_ident in catalog.list_tables(ns):
+            ident_str = f"{tbl_ident[0]}.{tbl_ident[1]}"
+            try:
+                catalog.drop_table(tbl_ident)
+                dropped.append(ident_str)
+            except Exception:
+                pass
+    s3 = get_s3_fs()
+    try:
+        if s3.exists("finance-lake/warehouse"):
+            s3.rm("finance-lake/warehouse", recursive=True)
+    except Exception:
+        pass
+    print(json.dumps({"success": True, "dropped": dropped, "message": f"Cleared {len(dropped)} tables and deleted warehouse files."}))
+
 def main():
     parser = argparse.ArgumentParser(description="Iceberg Table Manager Engine")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -359,6 +393,14 @@ def main():
     history_parser.add_argument("--table", required=True, help="Table name")
     history_parser.add_argument("--namespace", default=DEFAULT_NAMESPACE, help=f"Iceberg namespace (default: {DEFAULT_NAMESPACE})")
 
+    # Drop table command
+    drop_parser = subparsers.add_parser("drop-table")
+    drop_parser.add_argument("--table", required=True, help="Table name to drop")
+    drop_parser.add_argument("--namespace", default=DEFAULT_NAMESPACE, help=f"Iceberg namespace (default: {DEFAULT_NAMESPACE})")
+
+    # Clear all tables command
+    subparsers.add_parser("clear-all")
+
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -367,6 +409,10 @@ def main():
         handle_list_tables(args)
     elif args.command == "history":
         handle_history(args)
+    elif args.command == "drop-table":
+        handle_drop_table(args)
+    elif args.command == "clear-all":
+        handle_clear_all(args)
 
 if __name__ == "__main__":
     main()

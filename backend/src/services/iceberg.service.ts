@@ -159,3 +159,29 @@ export async function getTableHistory(
   return result.history;
 }
 
+export async function dropIcebergTable(
+  tableName: string,
+  namespace = config.iceberg.defaultNamespace
+): Promise<{ success: boolean; message: string }> {
+  return runIcebergManager<{ success: boolean; message: string }>([
+    "drop-table",
+    "--table",
+    tableName,
+    "--namespace",
+    namespace,
+  ]);
+}
+
+export async function clearAllIcebergTables(): Promise<{
+  success: boolean;
+  dropped: string[];
+  message: string;
+}> {
+  return runIcebergManager<{
+    success: boolean;
+    dropped: string[];
+    message: string;
+  }>(["clear-all"]);
+}
+
+
