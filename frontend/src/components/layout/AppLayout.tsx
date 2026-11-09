@@ -32,7 +32,7 @@ export function AppLayout() {
         <Sidebar />
 
         {/* Scrollable Main Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8 transition-all duration-300 ease-in-out">
           <div className="max-w-7xl mx-auto w-full pb-8">
             <Outlet />
           </div>

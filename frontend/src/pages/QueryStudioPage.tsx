@@ -114,7 +114,7 @@ LIMIT 25`,
       sql: `-- Returns only the 100 records added in Version 2 (Head Version minus Version 1)
 SELECT transaction_id, customer_id, transaction_amount, transaction_date, merchant_category
 FROM iceberg.banking.transactions FOR VERSION AS OF 810541187169676779
-EXCEPT
+EXCEPT ALL
 SELECT transaction_id, customer_id, transaction_amount, transaction_date, merchant_category
 FROM iceberg.banking.transactions FOR VERSION AS OF 8278352813902851825
 LIMIT 25`,

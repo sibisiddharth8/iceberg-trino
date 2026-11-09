@@ -184,7 +184,7 @@ export function IngestionPage() {
             Parquet Ingestion & Table Versioning
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Upload Parquet files or specify MinIO storage URIs. The first upload freezes the table schema; subsequent uploads validate schema consistency and append versioned snapshots.
+            Upload Parquet files or specify MinIO storage URIs.
           </p>
         </div>
 
@@ -248,15 +248,14 @@ export function IngestionPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2 gap-2">
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                        sample.tag.includes('Error')
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${sample.tag.includes('Error')
                           ? 'bg-rose-100 text-rose-700 border border-rose-200'
                           : sample.tag.includes('V1')
-                          ? 'bg-sc-blue-light text-sc-blue border border-sc-blue/20'
-                          : sample.tag.includes('V2')
-                          ? 'bg-sc-green-light text-sc-green-hover border border-sc-green/30'
-                          : 'bg-purple-100 text-purple-700 border border-purple-200'
-                      }`}
+                            ? 'bg-sc-blue-light text-sc-blue border border-sc-blue/20'
+                            : sample.tag.includes('V2')
+                              ? 'bg-sc-green-light text-sc-green-hover border border-sc-green/30'
+                              : 'bg-purple-100 text-purple-700 border border-purple-200'
+                        }`}
                     >
                       {sample.tag}
                     </span>
@@ -328,11 +327,10 @@ export function IngestionPage() {
               <button
                 type="button"
                 onClick={() => setSourceType('link')}
-                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all cursor-pointer ${
-                  sourceType === 'link'
+                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all cursor-pointer ${sourceType === 'link'
                     ? 'bg-white text-sc-navy shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <LinkIcon className="w-3.5 h-3.5" />
                 <span>MinIO / S3 Link</span>
@@ -340,11 +338,10 @@ export function IngestionPage() {
               <button
                 type="button"
                 onClick={() => setSourceType('file')}
-                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all cursor-pointer ${
-                  sourceType === 'file'
+                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md transition-all cursor-pointer ${sourceType === 'file'
                     ? 'bg-white text-sc-navy shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Upload File</span>
