@@ -5,6 +5,7 @@
   "scripts": {
     "empty": "python scripts/empty_data.py",
     "reset": "python scripts/empty_data.py",
+    "export:excel": "python scripts/export_to_excel.py",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
