@@ -249,12 +249,12 @@ export function IngestionPage() {
                   <div className="flex items-center justify-between mb-2 gap-2">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${sample.tag.includes('Error')
-                          ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                          : sample.tag.includes('V1')
-                            ? 'bg-sc-blue-light text-sc-blue border border-sc-blue/20'
-                            : sample.tag.includes('V2')
-                              ? 'bg-sc-green-light text-sc-green-hover border border-sc-green/30'
-                              : 'bg-purple-100 text-purple-700 border border-purple-200'
+                        ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                        : sample.tag.includes('V1')
+                          ? 'bg-sc-blue-light text-sc-blue border border-sc-blue/20'
+                          : sample.tag.includes('V2')
+                            ? 'bg-sc-green-light text-sc-green-hover border border-sc-green/30'
+                            : 'bg-purple-100 text-purple-700 border border-purple-200'
                         }`}
                     >
                       {sample.tag}
@@ -323,7 +323,7 @@ export function IngestionPage() {
             </div>
 
             {/* Source Switcher */}
-            <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
+            {/* <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setSourceType('link')}
@@ -346,7 +346,7 @@ export function IngestionPage() {
                 <FileText className="w-3.5 h-3.5" />
                 <span>Upload File</span>
               </button>
-            </div>
+            </div> */}
           </div>
 
           <form onSubmit={handleIngest} className="space-y-4">
